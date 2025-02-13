@@ -18,6 +18,7 @@ import java.util.zip.ZipInputStream;
 
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,11 +35,16 @@ public class Dataloader implements CommandLineRunner{
 
     @Autowired MongoMovieRepository mongoRepo;
     @Autowired MySQLMovieRepository sqlRepo;
+    
+    @Value("${data.path}")
+    String datapath;
 
     @Override
     public void run(String... args) throws Exception {
-      loadMovies("test");
+      loadMovies(datapath);
     }
+
+
 
     //TODO: Task 2
     public void loadMovies(String filepath) throws IOException, ParseException{
@@ -57,7 +63,6 @@ public class Dataloader implements CommandLineRunner{
         
         try{insertMovies(moviesDocList.subList(offset, endIndex));}
         catch(Exception e){
-          System.out.println("ERROR" + offset+" " + endIndex);
           mongoRepo.logError(moviesDocList.subList(offset, endIndex), e.getMessage(), new Date());
           offset=endIndex;
         }
@@ -83,10 +88,11 @@ public class Dataloader implements CommandLineRunner{
 
 
     public List<Document> getMoviesDocList(String filepath) throws IOException, ParseException{ // NEED TO CHANGE TO FILEPATH
-      // "C:/Users/dharm/paf_b5_assessment_template/data/movies_post_2010.zip"
-      // include zip input stream also
-      ZipFile zipFile = new ZipFile(new File("C:/Users/dharm/paf_b5_assessment_template/data/movies_post_2010.zip"));
-      ZipEntry zipEntry = zipFile.getEntry("movies_post_2010.json");
+  
+      ZipFile zipFile = new ZipFile(new File(filepath));
+      String[] namelist = filepath.split("/");
+      System.out.println(namelist[namelist.length-1].replace(".zip", ".json"));
+      ZipEntry zipEntry = zipFile.getEntry(namelist[namelist.length-1].replace(".zip", ".json"));
       
       InputStream stream = zipFile.getInputStream(zipEntry);
       InputStreamReader isr = new InputStreamReader(stream);
@@ -103,7 +109,6 @@ public class Dataloader implements CommandLineRunner{
         document = makeValid(document);
         documentList.add(document);
       }
-      //System.out.println(documentList.size() + " DOCLIST SIZE");
       return documentList;
     }
 
